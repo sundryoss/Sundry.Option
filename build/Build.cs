@@ -76,7 +76,7 @@ class Build : NukeBuild
         .Executes(() =>
         {
             DotNetRestore(
-                r => r.SetProjectFile(Solution));
+                r => r.SetProjectFile(Solution.src.Sundry_Option));
         });
 
     Target Compile => _ => _
