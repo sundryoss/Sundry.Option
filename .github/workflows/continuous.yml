@@ -18,8 +18,17 @@ name: continuous
 
 on:
   push:
-    paths:
-      - '!**/README.md'
+    branches:
+      - main
+      - dev
+    paths-ignore:
+      - '**/README.md'
+
+  pull_request:
+    branches:
+      - release
+    paths-ignore:
+      - '**/README.md'
 
 jobs:
   ubuntu-latest:

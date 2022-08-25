@@ -27,9 +27,10 @@ using System.Threading.Tasks;
 [GitHubActions(
     "continuous",
     GitHubActionsImage.UbuntuLatest,
+    AutoGenerate = false,
     FetchDepth = 0,
-   // On = new[] { GitHubActionsTrigger.Push },
-    OnPushExcludePaths = new[] {"**/README.md"},
+    OnPushBranches = new[] { "main","dev" },
+    OnPullRequestBranches = new[] { "release"},
     InvokedTargets = new[] {
         nameof(Pack),
    },
