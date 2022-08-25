@@ -3,7 +3,7 @@
 /// <summary>
 /// Contains the set of extensions to work with the <see cref="Option{T}"/> type.
 /// </summary>
-public static class OptionExtensions
+public static class Option
 {
     /// <summary>
     /// Creates the Some case instance of the <see cref="Option{T}"/> type, encapsulating provided value.

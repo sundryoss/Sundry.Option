@@ -23,6 +23,7 @@ on:
       - dev
     paths-ignore:
       - '**/README.md'
+      - 'sample/**'
 
   pull_request:
     branches:
