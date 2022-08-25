@@ -1,0 +1,20 @@
+<Project>
+    <PropertyGroup>
+        <Title>Sundry.Option</Title>
+        <Authors>SunDryOSS Contributors</Authors>
+        <Description>The Option Monad</Description>
+        <RepositoryType>git</RepositoryType>
+        <PackageTags>option, maybe, monad</PackageTags>
+        <RepositoryUrl>https://github.com/sundryoss/Sundry.Option</RepositoryUrl>
+        <PackageProjectUrl>https://anktsrkr.github.io/</PackageProjectUrl>
+        <TargetFramework>net6.0</TargetFramework>
+        <LangVersion>10</LangVersion>
+        <RootNamespace>Sundry.Option</RootNamespace>
+        <PackageIcon>icon.png</PackageIcon>
+    </PropertyGroup>
+    <ItemGroup>
+        <Content Include="$(MSBuildThisFileDirectory)icon.png" Pack="true" PackagePath="/">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
+</Project>
