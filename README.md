@@ -1,6 +1,10 @@
 # Sundry.Option
 
-[![Build Status](https://github.com/sundryoss/Sundry.Option/actions/workflows/continuous.yml/badge.svg)](https://github.com/sundryoss/Sundry.Option/actions/workflows/continuous.yml)
+<img alt="GitHub" src="https://img.shields.io/github/license/sundryoss/Sundry.Option?style=for-the-badge">
+
+<img alt="GitHub release (latest SemVer including pre-releases)" src="https://img.shields.io/github/v/release/sundryoss/Sundry.Option?include_prereleases&style=for-the-badge">
+
+<img alt="GitHub release (latest SemVer including pre-releases)" src="https://img.shields.io/github/v/release/sundryoss/Sundry.Option?style=for-the-badge">
 
 
 ## What is `Option<T>` type?
