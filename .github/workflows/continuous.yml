@@ -16,7 +16,10 @@
 
 name: continuous
 
-on: [push]
+on:
+  push:
+    paths:
+      - '!**/README.md'
 
 jobs:
   ubuntu-latest:

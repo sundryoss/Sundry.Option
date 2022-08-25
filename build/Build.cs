@@ -28,7 +28,7 @@ using System.Threading.Tasks;
     "continuous",
     GitHubActionsImage.UbuntuLatest,
     FetchDepth = 0,
-    On = new[] { GitHubActionsTrigger.Push },
+   // On = new[] { GitHubActionsTrigger.Push },
     OnPushExcludePaths = new[] {"**/README.md"},
     InvokedTargets = new[] {
         nameof(Pack),
@@ -100,7 +100,7 @@ class Build : NukeBuild
     Target Pack => _ => _
    .Produces(ArtifactsDirectory / "*.nupkg")
    .DependsOn(Compile)
-  // .Triggers(PublishToGithub, CreateRelease)
+   .Triggers(PublishToGithub, CreateRelease)
    .Executes(() =>
    {
        DotNetPack(p =>
