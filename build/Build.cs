@@ -68,14 +68,6 @@ class Build : NukeBuild
 
           Type type = GitVersion.GetType();
           PropertyInfo[] props = type.GetProperties();
-          string str = "{" + Environment.NewLine;
-          foreach (var prop in props)
-          {
-              str += (prop.Name + ":" + prop.GetValue(GitVersion)) + "," + Environment.NewLine;
-          }
-
-          Log.Information(str.Remove(str.Length - 1) + "}");
-
       });
     Target Restore => _ => _
         .Description("Restoring the solution dependencies")
@@ -108,7 +100,7 @@ class Build : NukeBuild
     Target Pack => _ => _
    .Produces(ArtifactsDirectory / "*.nupkg")
    .DependsOn(Compile)
-   .Triggers(PublishToGithub, CreateRelease)
+  // .Triggers(PublishToGithub, CreateRelease)
    .Executes(() =>
    {
        DotNetPack(p =>
