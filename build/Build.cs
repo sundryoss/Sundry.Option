@@ -187,8 +187,7 @@ class Build : NukeBuild
             FileName = fileName,
             ContentType = "application/octet-stream",
             RawData = artifactStream,
-        };
-
+        }; 
         await GitHubTasks.GitHubClient.Repository.Release.UploadAsset(release, assetUpload);
     }
 }
