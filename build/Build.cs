@@ -31,7 +31,7 @@ using ParameterAttribute = Nuke.Common.ParameterAttribute;
     AutoGenerate = false,
     FetchDepth = 0,
     OnPushBranches = new[] { "main", "dev" },
-    OnPullRequestBranches = new[] { "release/**" },
+    OnPullRequestBranches = new[] { "releases/**" },
     InvokedTargets = new[] {
         nameof(Pack),
    },
