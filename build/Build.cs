@@ -24,6 +24,7 @@ using static Nuke.Common.IO.PathConstruction;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 
 using ParameterAttribute = Nuke.Common.ParameterAttribute;
+using Serilog;
 
 [GitHubActions(
     "continuous",
@@ -90,6 +91,8 @@ class Build : NukeBuild
       {
           DotNetClean(c => c.SetProject(Solution.src.Sundry_Option));
           EnsureCleanDirectory(ArtifactsDirectory);
+          Log.Information(GitRepository.Branch);
+          Log.Information(GitHubActions.IsPullRequest.ToString());
       });
     Target Restore => _ => _
         .Description($"Restoring Project Dependencies.")
@@ -139,7 +142,7 @@ class Build : NukeBuild
     Target PublishToGithub => _ => _
        .Description($"Publishing to Github for Development only.")
        .Requires(() => Configuration.Equals(Configuration.Release))
-       .OnlyWhenStatic(() => GitRepository.IsOnDevelopBranch())
+       .OnlyWhenStatic(() => GitRepository.IsOnDevelopBranch() || GitHubActions.IsPullRequest)
        .Executes(() =>
        {
            GlobFiles(ArtifactsDirectory, ArtifactsType)
