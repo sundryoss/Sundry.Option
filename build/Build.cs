@@ -53,7 +53,6 @@ class Build : NukeBuild
 
     [Parameter("Nuget Feed Url for Public Access of Pre Releases")]
     readonly string NugetFeed;
-   
     [Parameter("Nuget Api Key"),Secret]
     readonly string NuGetApiKey;
 
@@ -75,7 +74,7 @@ class Build : NukeBuild
     [GitRepository]
     readonly GitRepository GitRepository;
 
-    [Solution]
+    [Solution(GenerateProjects =false)]
     readonly Solution Solution;
 
     static GitHubActions GitHubActions => GitHubActions.Instance;
@@ -87,7 +86,7 @@ class Build : NukeBuild
          : null;
 
     Target Clean => _ => _
-      .Description($"Cleaning : {Solution.src.Sundry_Option}")
+      .Description($"Cleaning Project.")
       .Before(Restore)
       .Executes(() =>
       {
@@ -95,7 +94,7 @@ class Build : NukeBuild
           EnsureCleanDirectory(ArtifactsDirectory);
       });
     Target Restore => _ => _
-        .Description($"Restoring {Solution.src.Sundry_Option} Dependencies")
+        .Description($"Restoring Project Dependencies.")
         .DependsOn(Clean)
         .Executes(() =>
         {
@@ -104,7 +103,7 @@ class Build : NukeBuild
         });
 
     Target Compile => _ => _
-        .Description($"Building {Solution.src.Sundry_Option} with the version: {GitVersion.NuGetVersionV2}")
+        .Description($"Building Project with the version.")
         .DependsOn(Restore)
         .Executes(() =>
         {
@@ -119,7 +118,7 @@ class Build : NukeBuild
         });
 
     Target Pack => _ => _
-    .Description($"Packing {Solution.src.Sundry_Option} with the version: {GitVersion.NuGetVersionV2}")
+    .Description($"Packing Project with the version.")
    .Produces(ArtifactsDirectory / ArtifactsType)
    .DependsOn(Compile)
    .Triggers(PublishToGithub,PublishToMyGet, PublishToNuGet, CreateRelease)
@@ -140,7 +139,7 @@ class Build : NukeBuild
    });
 
     Target PublishToGithub => _ => _
-       .Description($"Publishing to Github with the version: {GitVersion.NuGetVersionV2} for Development only.")
+       .Description($"Publishing to Github for Development only.")
        .Requires(() => Configuration.Equals(Configuration.Release))
        .Requires(() => GitRepository.IsOnDevelopBranch())
        .Executes(() =>
@@ -159,7 +158,7 @@ class Build : NukeBuild
        });
 
     Target PublishToMyGet => _ => _
-       .Description($"Publishing to MyGet with the version: {GitVersion.NuGetVersionV2} for PreRelese only.")
+       .Description($"Publishing to MyGet for PreRelese only.")
        .Requires(() => Configuration.Equals(Configuration.Release))
        .Requires(() => GitRepository.IsOnReleaseBranch())
        .Executes(() =>
@@ -177,25 +176,26 @@ class Build : NukeBuild
                });
        });
     Target PublishToNuGet => _ => _
-   .Requires(() => Configuration.Equals(Configuration.Release))
-   .Requires(() => GitRepository.IsOnMainOrMasterBranch())
-   .Executes(() =>
-   {
-       GlobFiles(ArtifactsDirectory, ArtifactsType)
-           .Where(x => !x.EndsWith(ExcludedArtifactsType))
-           .ForEach(x =>
-           {
-               DotNetNuGetPush(s => s
-                   .SetTargetPath(x)
-                   .SetSource(NugetFeed)
-                   .SetApiKey(NuGetApiKey)
-                   .SetSkipDuplicate(true)
-               );
-           });
-   });
-
+       .Description($"Publishing to NuGet with the version.")
+       .Requires(() => Configuration.Equals(Configuration.Release))
+       .Requires(() => GitRepository.IsOnMainOrMasterBranch())
+       .Executes(() =>
+       {
+           GlobFiles(ArtifactsDirectory, ArtifactsType)
+               .Where(x => !x.EndsWith(ExcludedArtifactsType))
+               .ForEach(x =>
+               {
+                   DotNetNuGetPush(s => s
+                       .SetTargetPath(x)
+                       .SetSource(NugetFeed)
+                       .SetApiKey(NuGetApiKey)
+                       .SetSkipDuplicate(true)
+                   );
+               });
+       });
 
     Target CreateRelease => _ => _
+       .Description($"Creating release for the publishable version.")
        .Requires(() => Configuration.Equals(Configuration.Release))
        .Requires(()=> GitRepository.IsOnMainOrMasterBranch() || GitRepository.IsOnReleaseBranch())
        .Executes(async () =>
