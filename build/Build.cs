@@ -45,6 +45,7 @@ class Build : NukeBuild
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
+    static readonly string PackageContentType = "application/octet-stream";
 
     [Parameter("MyGet Feed Url for Public Access of Pre Releases")]
     readonly string MyGetNugetFeed;
@@ -64,9 +65,6 @@ class Build : NukeBuild
 
     [Parameter("Excluded Artifacts Type")]
     readonly string ExcludedArtifactsType;
-
-    [Parameter("Package Content Type")]
-    readonly static string PackageContentType;
 
     [GitVersion]
     readonly GitVersion GitVersion;

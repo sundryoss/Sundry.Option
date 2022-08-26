@@ -5,6 +5,5 @@
   "ExcludedArtifactsType": "symbols.nupkg",
   "MyGetNugetFeed": "https://www.myget.org/F/sundryossdemo/api/v3/index.json",
   "NugetFeed": "https://www.myget.org/F/sundryossdemo/api/v3/index.json",
-  "PackageContentType": "application/octet-stream",
   "Solution": "Sundry.Option.sln"
 }

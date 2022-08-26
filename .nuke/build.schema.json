@@ -6,6 +6,10 @@
     "build": {
       "type": "object",
       "properties": {
+        "ArtifactsType": {
+          "type": "string",
+          "description": "Artifacts Type"
+        },
         "Configuration": {
           "type": "string",
           "description": "Configuration to build - Default is 'Debug' (local) or 'Release' (server)",
@@ -17,6 +21,14 @@
         "Continue": {
           "type": "boolean",
           "description": "Indicates to continue a previously failed build attempt"
+        },
+        "Copyright": {
+          "type": "string",
+          "description": "Copyright Detils"
+        },
+        "ExcludedArtifactsType": {
+          "type": "string",
+          "description": "Excluded Artifacts Type"
         },
         "Help": {
           "type": "boolean",
@@ -43,9 +55,27 @@
             "VSCode"
           ]
         },
+        "MyGetApiKey": {
+          "type": "string",
+          "description": "MyGet Api Key",
+          "default": "Secrets must be entered via 'nuke :secrets [profile]'"
+        },
+        "MyGetNugetFeed": {
+          "type": "string",
+          "description": "MyGet Feed Url for Public Access of Pre Releases"
+        },
         "NoLogo": {
           "type": "boolean",
           "description": "Disables displaying the NUKE logo"
+        },
+        "NuGetApiKey": {
+          "type": "string",
+          "description": "Nuget Api Key",
+          "default": "Secrets must be entered via 'nuke :secrets [profile]'"
+        },
+        "NugetFeed": {
+          "type": "string",
+          "description": "Nuget Feed Url for Public Access of Pre Releases"
         },
         "Partition": {
           "type": "string",
@@ -77,6 +107,8 @@
               "CreateRelease",
               "Pack",
               "PublishToGithub",
+              "PublishToMyGet",
+              "PublishToNuGet",
               "Restore"
             ]
           }
@@ -96,6 +128,8 @@
               "CreateRelease",
               "Pack",
               "PublishToGithub",
+              "PublishToMyGet",
+              "PublishToNuGet",
               "Restore"
             ]
           }
