@@ -1,40 +1,42 @@
 using System;
 using System.Linq;
-using Nuke.Common;
-using Nuke.Common.CI.GitHubActions;
-using Nuke.Common.IO;
+using System.IO;
+using System.Threading.Tasks;
+using System.Reflection;
 
+using Nuke.Common;
+using Nuke.Common.IO;
+using Nuke.Common.Git;
+using Nuke.Common.ChangeLog;
+using Nuke.Common.Tools.GitHub;
 using Nuke.Common.ProjectModel;
 using Nuke.Common.Tools.DotNet;
 using Nuke.Common.Tools.GitVersion;
 using Nuke.Common.Utilities.Collections;
+using Nuke.Common.CI.GitHubActions;
+using Nuke.Common.Tools.NerdbankGitVersioning;
 
-using Serilog;
+using Octokit;
+using Octokit.Internal;
+
 using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.IO.PathConstruction;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
-using Nuke.Common.Tools.NerdbankGitVersioning;
-using Octokit;
-using System.Reflection;
-using Nuke.Common.ChangeLog;
-using Nuke.Common.Tools.GitHub;
-using Octokit.Internal;
+
 using ParameterAttribute = Nuke.Common.ParameterAttribute;
-using Nuke.Common.Git;
-using System.IO;
-using System.Threading.Tasks;
 
 [GitHubActions(
     "continuous",
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = false,
     FetchDepth = 0,
-    OnPushBranches = new[] { "main","dev" },
-    OnPullRequestBranches = new[] { "release"},
+    OnPushBranches = new[] { "main", "dev" },
+    OnPullRequestBranches = new[] { "release" },
     InvokedTargets = new[] {
         nameof(Pack),
    },
-    EnableGitHubToken = true
+    EnableGitHubToken = true,
+    ImportSecrets = new[] { nameof(MyGetApiKey), nameof(NuGetApiKey) }
 )]
 
 class Build : NukeBuild
@@ -44,34 +46,56 @@ class Build : NukeBuild
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
 
+    [Parameter("MyGet Feed Url for Public Access of Pre Releases")]
+    readonly string MyGetNugetFeed;
+    [Parameter("MyGet Api Key"), Secret]
+    readonly string MyGetApiKey;
+
+    [Parameter("Nuget Feed Url for Public Access of Pre Releases")]
+    readonly string NugetFeed;
+   
+    [Parameter("Nuget Api Key"),Secret]
+    readonly string NuGetApiKey;
+
+    [Parameter("Copyright Detils")]
+    readonly string Copyright;
+
+    [Parameter("Artifacts Type")]
+    readonly string ArtifactsType;
+
+    [Parameter("Excluded Artifacts Type")]
+    readonly string ExcludedArtifactsType;
+
+    [Parameter("Package Content Type")]
+    readonly static string PackageContentType;
+
     [GitVersion]
     readonly GitVersion GitVersion;
 
     [GitRepository]
     readonly GitRepository GitRepository;
 
-    [Solution(GenerateProjects = false)] readonly Solution Solution;
-    GitHubActions GitHubActions => GitHubActions.Instance;
-    AbsolutePath ArtifactsDirectory => RootDirectory / ".artifacts";
-    string ChangeLogFile => RootDirectory / "CHANGELOG.md";
+    [Solution]
+    readonly Solution Solution;
 
-    string GithubNugetSource => GitHubActions != null
+    static GitHubActions GitHubActions => GitHubActions.Instance;
+    static AbsolutePath ArtifactsDirectory => RootDirectory / ".artifacts";
+    static string ChangeLogFile => RootDirectory / "CHANGELOG.md";
+
+    string GithubNugetFeed => GitHubActions != null
          ? $"https://nuget.pkg.github.com/{GitHubActions.RepositoryOwner}/index.json"
          : null;
 
-
     Target Clean => _ => _
+      .Description($"Cleaning : {Solution.src.Sundry_Option}")
       .Before(Restore)
       .Executes(() =>
       {
-          DotNetClean(c => c.SetProject(Solution));
+          DotNetClean(c => c.SetProject(Solution.src.Sundry_Option));
           EnsureCleanDirectory(ArtifactsDirectory);
-
-          Type type = GitVersion.GetType();
-          PropertyInfo[] props = type.GetProperties();
       });
     Target Restore => _ => _
-        .Description("Restoring the solution dependencies")
+        .Description($"Restoring {Solution.src.Sundry_Option} Dependencies")
         .DependsOn(Clean)
         .Executes(() =>
         {
@@ -80,14 +104,10 @@ class Build : NukeBuild
         });
 
     Target Compile => _ => _
-        .Description("Building the solution with the version")
+        .Description($"Building {Solution.src.Sundry_Option} with the version: {GitVersion.NuGetVersionV2}")
         .DependsOn(Restore)
         .Executes(() =>
         {
-            Log.Information(Solution);
-            Log.Information(Configuration);
-
-
             DotNetBuild(b => b
                 .SetProjectFile(Solution.src.Sundry_Option)
                 .SetConfiguration(Configuration)
@@ -99,9 +119,10 @@ class Build : NukeBuild
         });
 
     Target Pack => _ => _
-   .Produces(ArtifactsDirectory / "*.nupkg")
+    .Description($"Packing {Solution.src.Sundry_Option} with the version: {GitVersion.NuGetVersionV2}")
+   .Produces(ArtifactsDirectory / ArtifactsType)
    .DependsOn(Compile)
-   .Triggers(PublishToGithub, CreateRelease)
+   .Triggers(PublishToGithub,PublishToMyGet, PublishToNuGet, CreateRelease)
    .Executes(() =>
    {
        DotNetPack(p =>
@@ -111,7 +132,7 @@ class Build : NukeBuild
                .SetOutputDirectory(ArtifactsDirectory)
                .EnableNoBuild()
                .EnableNoRestore()
-               .SetCopyright($"©SunDryOSS {DateTime.Now.Year}")
+               .SetCopyright(Copyright)
                .SetVersion(GitVersion.NuGetVersionV2)
                .SetAssemblyVersion(GitVersion.AssemblySemVer)
                .SetInformationalVersion(GitVersion.InformationalVersion)
@@ -119,30 +140,71 @@ class Build : NukeBuild
    });
 
     Target PublishToGithub => _ => _
+       .Description($"Publishing to Github with the version: {GitVersion.NuGetVersionV2} for Development only.")
        .Requires(() => Configuration.Equals(Configuration.Release))
+       .Requires(() => GitRepository.IsOnDevelopBranch())
        .Executes(() =>
        {
-           GlobFiles(ArtifactsDirectory, "*.nupkg")
-               .Where(x => !x.EndsWith("symbols.nupkg"))
+           GlobFiles(ArtifactsDirectory, ArtifactsType)
+               .Where(x => !x.EndsWith(ExcludedArtifactsType))
                .ForEach(x =>
                {
                    DotNetNuGetPush(s => s
                        .SetTargetPath(x)
-                       .SetSource(GithubNugetSource)
+                       .SetSource(GithubNugetFeed)
                        .SetApiKey(GitHubActions.Token)
                        .SetSkipDuplicate(true)
                    );
                });
        });
 
+    Target PublishToMyGet => _ => _
+       .Description($"Publishing to MyGet with the version: {GitVersion.NuGetVersionV2} for PreRelese only.")
+       .Requires(() => Configuration.Equals(Configuration.Release))
+       .Requires(() => GitRepository.IsOnReleaseBranch())
+       .Executes(() =>
+       {
+           GlobFiles(ArtifactsDirectory, ArtifactsType)
+               .Where(x => !x.EndsWith(ExcludedArtifactsType))
+               .ForEach(x =>
+               {
+                   DotNetNuGetPush(s => s
+                       .SetTargetPath(x)
+                       .SetSource(MyGetNugetFeed)
+                       .SetApiKey(MyGetApiKey)
+                       .SetSkipDuplicate(true)
+                   );
+               });
+       });
+    Target PublishToNuGet => _ => _
+   .Requires(() => Configuration.Equals(Configuration.Release))
+   .Requires(() => GitRepository.IsOnMainOrMasterBranch())
+   .Executes(() =>
+   {
+       GlobFiles(ArtifactsDirectory, ArtifactsType)
+           .Where(x => !x.EndsWith(ExcludedArtifactsType))
+           .ForEach(x =>
+           {
+               DotNetNuGetPush(s => s
+                   .SetTargetPath(x)
+                   .SetSource(NugetFeed)
+                   .SetApiKey(NuGetApiKey)
+                   .SetSkipDuplicate(true)
+               );
+           });
+   });
+
+
     Target CreateRelease => _ => _
        .Requires(() => Configuration.Equals(Configuration.Release))
+       .Requires(()=> GitRepository.IsOnMainOrMasterBranch() || GitRepository.IsOnReleaseBranch())
        .Executes(async () =>
        {
            var credentials = new Credentials(GitHubActions.Token);
            GitHubTasks.GitHubClient = new GitHubClient(new ProductHeaderValue(nameof(NukeBuild)),
                new InMemoryCredentialStore(credentials));
 
+           var (owner, name) = (GitRepository.GetGitHubOwner(), GitRepository.GetGitHubName());
 
            var releaseTag = GitVersion.NuGetVersionV2;
            var changeLogSectionEntries = ChangelogTasks.ExtractChangelogSectionNotes(ChangeLogFile);
@@ -161,10 +223,10 @@ class Build : NukeBuild
            var createdRelease = await GitHubTasks
                                        .GitHubClient
                                        .Repository
-                                       .Release.Create(GitRepository.GetGitHubOwner(),GitRepository.GetGitHubName(), newRelease);
+                                       .Release.Create(owner, name, newRelease);
 
-           GlobFiles(ArtifactsDirectory, "*.nupkg")
-              .Where(x => !x.EndsWith("symbols.nupkg"))
+           GlobFiles(ArtifactsDirectory, ArtifactsType)
+              .Where(x => !x.EndsWith(ExcludedArtifactsType))
               .ForEach(async x =>
               {
                   await UploadReleaseAssetToGithub(createdRelease, x);
@@ -174,7 +236,7 @@ class Build : NukeBuild
                       .GitHubClient
                       .Repository
                       .Release
-              .Edit(GitRepository.GetGitHubOwner(), GitRepository.GetGitHubName(), createdRelease.Id, new ReleaseUpdate { Draft = false });
+              .Edit(owner, name, createdRelease.Id, new ReleaseUpdate { Draft = false });
        });
 
 
@@ -185,9 +247,9 @@ class Build : NukeBuild
         var assetUpload = new ReleaseAssetUpload
         {
             FileName = fileName,
-            ContentType = "application/octet-stream",
+            ContentType = PackageContentType,
             RawData = artifactStream,
-        }; 
+        };
         await GitHubTasks.GitHubClient.Repository.Release.UploadAsset(release, assetUpload);
     }
 }

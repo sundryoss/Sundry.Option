@@ -1,4 +1,10 @@
 {
   "$schema": "./build.schema.json",
-  "Solution": "Sundry.Option.sln"
+  "MyGetNugetFeed": "https://www.myget.org/F/sundryossdemo/api/v3/index.json",
+  "NugetFeed": "https://www.myget.org/F/sundryossdemo/api/v3/index.json",
+  "Solution": "Sundry.Option.sln",
+  "Copyright": "©SunDryOSS 2022",
+  "ArtifactsType": "*.nupkg",
+  "ExcludedArtifactsType": "symbols.nupkg",
+  "PackageContentType": "application/octet-stream"
 }

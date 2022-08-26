@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Sundry.Option" Version="1.0.0" />
+    <ProjectReference Include="..\src\Sundry.Option.csproj" />
   </ItemGroup>
 
 </Project>
