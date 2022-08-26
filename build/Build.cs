@@ -139,7 +139,7 @@ class Build : NukeBuild
     Target PublishToGithub => _ => _
        .Description($"Publishing to Github for Development only.")
        .Requires(() => Configuration.Equals(Configuration.Release))
-       .Requires(() => GitRepository.IsOnDevelopBranch())
+       .OnlyWhenStatic(() => GitRepository.IsOnDevelopBranch())
        .Executes(() =>
        {
            GlobFiles(ArtifactsDirectory, ArtifactsType)
@@ -158,7 +158,7 @@ class Build : NukeBuild
     Target PublishToMyGet => _ => _
        .Description($"Publishing to MyGet for PreRelese only.")
        .Requires(() => Configuration.Equals(Configuration.Release))
-       .Requires(() => GitRepository.IsOnReleaseBranch())
+       .OnlyWhenStatic(() => GitRepository.IsOnReleaseBranch())
        .Executes(() =>
        {
            GlobFiles(ArtifactsDirectory, ArtifactsType)
@@ -176,7 +176,7 @@ class Build : NukeBuild
     Target PublishToNuGet => _ => _
        .Description($"Publishing to NuGet with the version.")
        .Requires(() => Configuration.Equals(Configuration.Release))
-       .Requires(() => GitRepository.IsOnMainOrMasterBranch())
+       .OnlyWhenStatic(() => GitRepository.IsOnMainOrMasterBranch())
        .Executes(() =>
        {
            GlobFiles(ArtifactsDirectory, ArtifactsType)
@@ -195,7 +195,7 @@ class Build : NukeBuild
     Target CreateRelease => _ => _
        .Description($"Creating release for the publishable version.")
        .Requires(() => Configuration.Equals(Configuration.Release))
-       .Requires(()=> GitRepository.IsOnMainOrMasterBranch() || GitRepository.IsOnReleaseBranch())
+       .OnlyWhenStatic(()=> GitRepository.IsOnMainOrMasterBranch() || GitRepository.IsOnReleaseBranch())
        .Executes(async () =>
        {
            var credentials = new Credentials(GitHubActions.Token);
